@@ -10,6 +10,7 @@ public class Board : MonoBehaviour
     public float swapTime = 0.3f;
     public GameObject tileNormalPrefab;
     public GameObject tileObstaclePrefab;
+    public GameObject tileBreakablePrefab;
     public GameObject[] gamePiecePrefabs;       // Array with the dot prefabs
     Tile[,] m_allTiles;                         // Manages the tile positions
     GamePiece[,] m_allGamePieces;               // Manages the position of the actual pieces
@@ -94,7 +95,7 @@ public class Board : MonoBehaviour
         {
             if (sTile != null)
             {
-                MakeTile(tileObstaclePrefab, sTile.x, sTile.y, sTile.z);
+                MakeTile(sTile.tilePrefab, sTile.x, sTile.y, sTile.z);
             }
         }
         for (int i = 0; i < width; i++)
@@ -252,14 +253,20 @@ public class Board : MonoBehaviour
 
     void HighlightTileOff(int x, int y)
     {
-        SpriteRenderer spriteRenderer = m_allTiles[x, y].GetComponent<SpriteRenderer>();
-        spriteRenderer.color = new Color(spriteRenderer.color.r, spriteRenderer.color.g, spriteRenderer.color.a, 0);
+        if (m_allTiles[x, y].tileType != TileType.Breakable)
+        {
+            SpriteRenderer spriteRenderer = m_allTiles[x, y].GetComponent<SpriteRenderer>();
+            spriteRenderer.color = new Color(spriteRenderer.color.r, spriteRenderer.color.g, spriteRenderer.color.a, 0);
+        }
     }
 
     void HighlightTileOn(int x, int y, Color col)
     {
-        SpriteRenderer spriteRenderer = m_allTiles[x, y].GetComponent<SpriteRenderer>();
-        spriteRenderer.color = col;
+        if (m_allTiles[x, y].tileType != TileType.Breakable)
+        {
+            SpriteRenderer spriteRenderer = m_allTiles[x, y].GetComponent<SpriteRenderer>();
+            spriteRenderer.color = col;
+        }
     }
 
     void HighlightMatchesAt(int x, int y)
@@ -298,6 +305,26 @@ public class Board : MonoBehaviour
         }
 
         return (leftMatches.Count > 0 || downMatches.Count > 0);
+    }
+
+    void BreakTileAt(int x, int y)
+    {
+        Tile tileToBreak = m_allTiles[x, y];
+        if (tileToBreak != null)
+        {
+            tileToBreak.BreakTile();
+        }
+    }
+
+    void BreakTileAt(List<GamePiece> gamePieces)
+    {
+        foreach (GamePiece piece in gamePieces)
+        {
+            if (piece != null)
+            {
+                BreakTileAt(piece.xIndex, piece.yIndex);
+            }
+        }
     }
 
     bool IsNextTo(Tile start, Tile end)
@@ -634,6 +661,7 @@ public class Board : MonoBehaviour
         while (!isFinished)
         {
             ClearPieceAt(gamePieces);
+            BreakTileAt(gamePieces);
 
             yield return new WaitForSeconds(0.25f);
 
